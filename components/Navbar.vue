@@ -1,32 +1,29 @@
+<script setup>
+</script>
+
 <template>
-  <nav class="bg-orange-300 p-4">
-    <ul class="flex space-x-6 justify-end">
+  <nav class="bg-gray-800 p-4">
+    <ul class="flex flex-row-reverse items-center gap-4">
       <li>
-        <NuxtLink
-          to="/"
-          class="text-white font-semibold hover:"
-          active-class="decoration-2 decoration-white"
+        <NuxtLink to="/login" class="text-white hover:text-gray-300"
+          >Connexion</NuxtLink
         >
-          Liste Tâche
-        </NuxtLink>
       </li>
       <li>
-        <NuxtLink
-          to="/taches/Formtache"
-          class="text-white font-semibold hover-orange-400"
-          active-class="decoration-2 decoration-white"
+        <NuxtLink to="/Register" class="text-white hover:text-gray-300"
+          >Inscription</NuxtLink
         >
-          Nouvelle Tâche
-        </NuxtLink>
+      </li>
+
+      <li>
+        <NuxtLink to="/taches/FormTache" class="text-white hover:text-gray-300"
+          >Nouvelle tâche</NuxtLink
+        >
       </li>
       <li>
-        <NuxtLink
-          to="/"
-          class="text-white font-semibold hover:"
-          active-class=" decoration-2 decoration-white"
+        <NuxtLink to="/ListTache" class="text-white hover:text-gray-300"
+          >Liste des tâches</NuxtLink
         >
-          Connexion
-        </NuxtLink>
       </li>
     </ul>
   </nav>

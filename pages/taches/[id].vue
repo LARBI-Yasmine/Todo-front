@@ -1,217 +1,379 @@
 <template>
-  <h1 class="text-4xl mt-5 font-extrabold mb-8 text-center text-gray-900">
-    Détail de la tâche
-  </h1>
-  <div
-    class="p-6 max-w-3xl mt-5 mx-auto bg-white rounded-3xl shadow-xl border border-gray-100"
-  >
-    <div v-if="tache" class="space-y-6">
-      <div class="flex items-center justify-between border-b pb-4">
-        <h2 class="text-3xl font-bold text-grey-400">{{ tache.title }}</h2>
-        <span
-          :class="[
-            'px-4 py-1 rounded-full text-sm font-semibold',
-            tache.completed
-              ? 'bg-green-100 text-green-800'
-              : 'bg-yellow-100 text-yellow-800',
-          ]"
-        >
-          {{ tache.completed ? "Terminée" : "En cours" }}
-        </span>
-      </div>
+  <div class="max-w-4xl mx-auto px-4 py-10">
+    <h1 class="text-4xl font-bold text-center mb-10 text-gray-900">
+      Détail de la tâche
+    </h1>
 
-      <p class="text-gray-700 text-lg leading-relaxed">
-        {{ tache.description || "Pas de description fournie." }}
-      </p>
+    <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-200">
+      <!-- Affichage détail -->
+      <div v-if="tache && !enEdition" class="space-y-6">
+        <div class="flex items-center justify-between border-b pb-4">
+          <h2 class="text-2xl font-semibold text-gray-800">
+            {{ tache.title }}
+          </h2>
+          <span
+            class="px-3 py-1 rounded-full text-sm font-medium"
+            :class="badgeClass(tache.type)"
+          >
+            {{ tache.type }}
+          </span>
+        </div>
 
-      <div class="flex items-center space-x-6 text-gray-600">
-        <div class="flex items-center space-x-2">
-          <span>Date prévue :</span>
-          <time :datetime="tache.date" class="ml-1 font-medium text-gray-900">
+        <p class="text-gray-700 text-lg leading-relaxed">
+          {{ tache.description || "Pas de description fournie." }}
+        </p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-gray-600 mt-4">
+          <div>
+            <span class="font-medium text-gray-800">Date prévue :</span>
+            <br />
             {{ formatDate(tache.date) }}
-          </time>
+          </div>
+          <div>
+            <span class="font-medium text-gray-800">Difficulté :</span>
+            <br />
+            {{ tache.difficulte }}
+          </div>
+          <div>
+            <span class="font-medium text-gray-800">Estimation :</span>
+            <br />
+            {{ tache.estimation }} jour(s)
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row gap-4 mt-8">
+          <button
+            @click="showDeleteModal = true"
+            class="w-full sm:w-auto bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-6 rounded-lg transition"
+            :disabled="loadingDelete"
+          >
+            Supprimer
+          </button>
+          <button
+            @click="enEdition = true"
+            class="w-full sm:w-auto bg-blue-300 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg transition"
+          >
+            Modifier
+          </button>
         </div>
       </div>
+      <!-- Formulaire modification -->
+      <div v-else-if="enEdition" class="mt-10">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+          Modifier la tâche
+        </h2>
 
-      <!-- Boutons Modifier / Supprimer -->
-      <div class="flex gap-3 mt-10">
-        <button
-          @click="toggleCompletion"
-          class="flex-1 bg-indigo-400 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50"
-          :disabled="loadingToggle"
+        <form
+          @submit.prevent="submitUpdate"
+          class="bg-white p-6 rounded-2xl min-h-[50vh] shadow-md w-full max-w-2xl mx-auto space-y-4"
         >
-          {{
-            tache.completed
-              ? "Marquer comme non terminée"
-              : "Marquer comme terminée"
-          }}
-        </button>
+          <div>
+            <label
+              for="edit-title"
+              class="block text-sm mb-1 font-medium text-gray-700"
+            >
+              Titre
+            </label>
+            <input
+              id="edit-title"
+              v-model="editForm.title"
+              placeholder="Titre de la tâche"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
+          </div>
 
-        <button
-          @click="showDeleteModal = true"
-          class="flex-1 bg-red-400 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition duration-200 disabled:opacity-50"
-          :disabled="loadingDelete"
-        >
-          Supprimer
-        </button>
+          <div>
+            <label
+              for="edit-type"
+              class="block text-sm mb-1 font-medium text-gray-700"
+            >
+              Type
+            </label>
+            <select
+              id="edit-type"
+              v-model="editForm.type"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              <option disabled value="">-- Choisir un type --</option>
+              <option value="à faire">à faire</option>
+              <option value="en cours">en cours</option>
+              <option value="terminée">terminée</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              for="edit-description"
+              class="block text-sm mb-1 font-medium text-gray-700"
+            >
+              Description
+            </label>
+            <textarea
+              id="edit-description"
+              v-model="editForm.description"
+              placeholder="Description de la tâche"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            ></textarea>
+          </div>
+
+          <div>
+            <label
+              for="edit-difficulte"
+              class="block text-sm mb-1 font-medium text-gray-700"
+            >
+              Difficulté
+            </label>
+            <select
+              id="edit-difficulte"
+              v-model="editForm.difficulte"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            >
+              <option disabled value="">-- Choisir une difficulté --</option>
+              <option value="faible">faible</option>
+              <option value="moyen">moyen</option>
+              <option value="difficile">difficile</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              for="edit-estimation"
+              class="block text-sm mb-1 font-medium text-gray-700"
+            >
+              Estimation (en jours)
+            </label>
+            <input
+              id="edit-estimation"
+              v-model.number="editForm.estimation"
+              type="number"
+              min="1"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
+          </div>
+
+          <div>
+            <label
+              for="edit-date"
+              class="block text-sm mb-1 font-medium text-gray-700"
+            >
+              Date
+            </label>
+            <input
+              id="edit-date"
+              v-model="editForm.date"
+              type="date"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg"
+            />
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-4 pt-4">
+            <button
+              type="submit"
+              class="w-full sm:w-auto bg-blue-400 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
+            >
+              Enregistrer
+            </button>
+            <button
+              type="button"
+              @click="enEdition = false"
+              class="w-full sm:w-auto bg-red-400 hover:bg-red-600 text-white py-2 px-6 rounded-lg transition-colors"
+            >
+              Annuler
+            </button>
+          </div>
+        </form>
       </div>
-    </div>
 
-    <p v-else class="text-center text-gray-500 text-xl mt-12">
-      Chargement ou tâche non trouvée.
-    </p>
-  </div>
-
-  <!-- Bouton Retour -->
-  <div class="mt-12 text-center">
-    <NuxtLink
-      to="/"
-      class="inline-block px-6 py-3 bg-orange-300 hover:bg-orange-400 text-gray-800 font-semibold rounded-lg transition duration-200"
-    >
-      Retour à la liste
-    </NuxtLink>
-  </div>
-
-  <!-- Modal confirmation suppression (sans fond opaque) -->
-  <div
-    v-if="showDeleteModal"
-    class="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-  >
-    <div
-      class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center space-y-6 pointer-events-auto"
-    >
-      <h3 class="text-2xl font-semibold text-gray-900">
-        Confirmer la suppression
-      </h3>
-      <p class="text-gray-700">
-        Es-tu sûr de vouloir supprimer cette tâche ? Cette action est
-        irréversible.
+      <p v-else class="text-gray-500 text-center text-xl mt-8">
+        Chargement en cours...
       </p>
+    </div>
 
-      <div class="flex justify-center gap-6">
-        <button
-          @click="confirmDelete"
-          class="px-6 py-3 bg-red-400 hover:bg-red-700 text-white rounded-xl font-semibold transition duration-200 disabled:opacity-50"
-          :disabled="loadingDelete"
-        >
-          Oui, supprimer
-        </button>
-        <button
-          @click="cancelDelete"
-          class="px-6 py-3 bg-orange-300 hover:bg-orange-400 rounded-xl font-semibold transition duration-200 disabled:opacity-50"
-          :disabled="loadingDelete"
-        >
-          Annuler
-        </button>
+    <!-- Bouton retour -->
+    <div class="text-center mt-10">
+      <NuxtLink
+        to="/"
+        class="inline-block bg-orange-300 hover:bg-orange-400 text-gray-900 font-semibold px-6 py-3 rounded-lg"
+      >
+        Retour à la liste
+      </NuxtLink>
+    </div>
+
+    <!-- Modal suppression -->
+    <div
+      v-if="showDeleteModal"
+      class="fixed inset-0 flex items-center justify-center bg-opacity-30 z-50"
+    >
+      <div class="bg-white rounded-xl shadow-lg p-8 w-full max-w-md space-y-4">
+        <h3 class="text-xl font-semibold text-gray-900">
+          Confirmer la suppression
+        </h3>
+        <p class="text-gray-600">
+          Es-tu sûr de vouloir supprimer cette tâche ? Cette action est
+          irréversible.
+        </p>
+        <div class="flex justify-end gap-4 mt-6">
+          <button
+            @click="confirmDelete"
+            class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg"
+            :disabled="loadingDelete"
+          >
+            Supprimer
+          </button>
+          <button
+            @click="cancelDelete"
+            class="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded-lg"
+          >
+            Annuler
+          </button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Notification toast -->
-  <transition
-    enter-active-class="transition ease-out duration-300"
-    enter-from-class="opacity-0 translate-y-[-10px]"
-    enter-to-class="opacity-100 translate-y-0"
-    leave-active-class="transition ease-in duration-300"
-    leave-from-class="opacity-100 translate-y-0"
-    leave-to-class="opacity-0 translate-y-[-10px]"
-  >
-    <div
-      v-if="showToast"
-      class="fixed top-18 right-6 bg-green-300 text-white px-6 py-3 rounded-xl shadow-lg z-50"
+    <!-- Toast -->
+    <transition
+      enter-active-class="transition ease-out duration-300"
+      enter-from-class="opacity-0 translate-y-4"
+      enter-to-class="opacity-100 translate-y-0"
+      leave-active-class="transition ease-in duration-300"
+      leave-from-class="opacity-100 translate-y-0"
+      leave-to-class="opacity-0 translate-y-4"
     >
-      {{ toastMessage }}
-    </div>
-  </transition>
+      <div
+        v-if="showToast"
+        class="fixed top-6 right-6 bg-orange-300 text-white px-6 py-3 rounded-xl shadow-lg z-50"
+      >
+        {{ toastMessage }}
+      </div>
+    </transition>
+  </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, reactive, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 
 const route = useRoute();
 const router = useRouter();
 
 const tache = ref(null);
-const loadingToggle = ref(false);
 const loadingDelete = ref(false);
 const showDeleteModal = ref(false);
-
-const toastMessage = ref("");
+const enEdition = ref(false);
 const showToast = ref(false);
+const toastMessage = ref("");
 
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("fr-FR", {
+const editForm = reactive({
+  title: "",
+  description: "",
+  type: "à faire",
+  difficulte: "faible",
+  estimation: 1,
+  date: "",
+});
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString("fr-FR", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-};
+}
 
-const showNotification = (message) => {
-  toastMessage.value = message;
+function badgeClass(type) {
+  switch (type) {
+    case "à faire":
+      return "bg-red-100 text-red-600";
+    case "en cours":
+      return "bg-yellow-100 text-yellow-700";
+    case "terminée":
+      return "bg-green-100 text-green-600";
+    default:
+      return "bg-gray-100 text-gray-600";
+  }
+}
+
+function showToastMessage(msg) {
+  toastMessage.value = msg;
   showToast.value = true;
-  setTimeout(() => {
-    showToast.value = false;
-  }, 3000);
-};
+  setTimeout(() => (showToast.value = false), 3000);
+}
 
-const fetchTache = async () => {
+async function fetchTache() {
   try {
-    tache.value = await $fetch(
+    const res = await fetch(
       `http://localhost:4000/api/taches/${route.params.id}`
     );
+    if (!res.ok) throw new Error("Erreur lors du chargement");
+    const data = await res.json();
+    tache.value = data;
+
+    Object.assign(editForm, {
+      title: data.title,
+      description: data.description || "",
+      type: data.type,
+      difficulte: data.difficulte,
+      estimation: data.estimation,
+      date: data.date.split("T")[0],
+    });
   } catch (error) {
-    console.error("Erreur lors du chargement de la tâche :", error);
+    console.error(error);
   }
-};
+}
 
-onMounted(fetchTache);
-
-const toggleCompletion = async () => {
-  loadingToggle.value = true;
+async function submitUpdate() {
   try {
-    const updated = await $fetch(
+    const res = await fetch(
       `http://localhost:4000/api/taches/${route.params.id}`,
       {
         method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm),
       }
     );
-    tache.value = updated;
-    showNotification(
-      updated.completed
-        ? "Tâche marquée comme terminée."
-        : "Tâche marquée comme non terminée."
-    );
-  } catch (error) {
-    showNotification("Erreur lors du changement de statut.");
-    console.error(error);
-  } finally {
-    loadingToggle.value = false;
+    if (!res.ok) throw new Error("Erreur MAJ");
+    showToastMessage("Tâche mise à jour");
+    enEdition.value = false;
+    await fetchTache();
+  } catch (err) {
+    console.error(err);
+    showToastMessage("Échec de la mise à jour");
   }
-};
+}
 
-const confirmDelete = async () => {
+async function confirmDelete() {
   loadingDelete.value = true;
   try {
-    await $fetch(`http://localhost:4000/api/taches/${route.params.id}`, {
-      method: "DELETE",
-    });
-    showNotification("Tâche supprimée avec succès.");
+    const res = await fetch(
+      `http://localhost:4000/api/taches/${route.params.id}`,
+      {
+        method: "DELETE",
+      }
+    );
+    if (!res.ok) throw new Error("Erreur suppression");
+    showToastMessage("Tâche supprimée");
+    // Attendre 2 secondes avant de rediriger
     setTimeout(() => {
       router.push("/");
-    }, 2500);
-  } catch (error) {
-    showNotification("Erreur lors de la suppression.");
-    console.error(error);
+    }, 3000);
+  } catch (err) {
+    console.error(err);
+    showToastMessage("Erreur suppression");
   } finally {
     loadingDelete.value = false;
     showDeleteModal.value = false;
   }
-};
+}
 
-const cancelDelete = () => {
+function cancelDelete() {
   showDeleteModal.value = false;
-};
+}
+
+onMounted(fetchTache);
 </script>
