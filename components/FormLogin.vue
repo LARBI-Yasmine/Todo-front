@@ -1,12 +1,12 @@
-<script setup>
-import { ref } from "vue";
-import { useRouter } from "vue-router";
+<script setup lang="ts">
+import { useAuthStore } from "@/stores/auth"; // adapte le chemin si nécessaire
 
 const router = useRouter();
+const auth = useAuthStore();
 
 const email = ref("");
 const password = ref("");
-const error = ref(null);
+const error = ref<string | null>(null);
 const loading = ref(false);
 
 const submit = async () => {
@@ -20,23 +20,10 @@ const submit = async () => {
   }
 
   try {
-    const res = await fetch("http://localhost:4000/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: email.value,
-        password: password.value,
-      }),
-    });
-
-    if (!res.ok) {
-      const data = await res.json();
-      throw new Error(data.message || "Email ou mot de passe incorrect.");
-    }
-
+    await auth.login(email.value, password.value);
     router.push("/ListTache");
-  } catch (err) {
-    error.value = err.message;
+  } catch (err: any) {
+    error.value = err.message || "Échec de la connexion.";
   } finally {
     loading.value = false;
   }
@@ -96,7 +83,7 @@ const submit = async () => {
       <p class="text-center text-sm text-gray-600 mb-6">
         Vous n'avez pas de compte ?
         <NuxtLink
-          to="/Register"
+          to="/register"
           class="text-blue-600 hover:underline font-medium"
         >
           Inscrivez-vous ici

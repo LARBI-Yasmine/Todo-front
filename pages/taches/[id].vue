@@ -198,7 +198,7 @@
     <!-- Bouton retour -->
     <div class="text-center mt-10">
       <NuxtLink
-        to="/"
+        to="/ListTache"
         class="inline-block bg-orange-300 hover:bg-orange-400 text-gray-900 font-semibold px-6 py-3 rounded-lg"
       >
         Retour à la liste
@@ -258,6 +258,7 @@
 <script setup>
 import { ref, reactive, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { api } from "../../utils/axios";
 
 const route = useRoute();
 const router = useRouter();
@@ -307,11 +308,9 @@ function showToastMessage(msg) {
 
 async function fetchTache() {
   try {
-    const res = await fetch(
-      `http://localhost:4000/api/taches/${route.params.id}`
-    );
-    if (!res.ok) throw new Error("Erreur lors du chargement");
-    const data = await res.json();
+    const res = await api.get(`/taches/${route.params.id}`);
+    if (res.status !== 200) throw new Error("Erreur lors du chargement");
+    const data = res.data;
     tache.value = data;
 
     Object.assign(editForm, {
@@ -329,15 +328,11 @@ async function fetchTache() {
 
 async function submitUpdate() {
   try {
-    const res = await fetch(
-      `http://localhost:4000/api/taches/${route.params.id}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editForm),
-      }
-    );
-    if (!res.ok) throw new Error("Erreur MAJ");
+    const res = await api.put(`/taches/${route.params.id}`, {
+      headers: { "Content-Type": "application/json" },
+      editForm,
+    });
+    if (res.status !== 200) throw new Error("Erreur lors du chargement");
     showToastMessage("Tâche mise à jour");
     enEdition.value = false;
     await fetchTache();
@@ -350,18 +345,15 @@ async function submitUpdate() {
 async function confirmDelete() {
   loadingDelete.value = true;
   try {
-    const res = await fetch(
-      `http://localhost:4000/api/taches/${route.params.id}`,
-      {
-        method: "DELETE",
-      }
-    );
-    if (!res.ok) throw new Error("Erreur suppression");
-    showToastMessage("Tâche supprimée");
-    // Attendre 2 secondes avant de rediriger
-    setTimeout(() => {
-      router.push("/");
-    }, 3000);
+    const res = await api.delete(`/taches/${route.params.id}`);
+    console.log(res.status);
+    if (res.status === 204) {
+      showToastMessage("Tâche supprimée");
+      // Attendre 2 secondes avant de rediriger
+      setTimeout(() => {
+        router.push("/ListTache");
+      }, 2000);
+    }
   } catch (err) {
     console.error(err);
     showToastMessage("Erreur suppression");

@@ -88,6 +88,7 @@
 import { ref, computed, onMounted } from "vue";
 import draggable from "vuedraggable";
 import TacheCard from "@/components/TacheCard.vue";
+import { api } from "../utils/axios";
 
 // --- Références
 const taches = ref([]);
@@ -127,12 +128,11 @@ const titleClass = (key) =>
     terminee: "text-green-700",
   }[key] || "");
 
-// --- Chargement initial
 onMounted(async () => {
   try {
-    const res = await fetch("http://localhost:4000/api/taches");
+    const res = await api.get("/taches");
 
-    const data = await res.json();
+    const data = res.data;
     console.log("Tâches récupérées :", data);
     taches.value = data;
 

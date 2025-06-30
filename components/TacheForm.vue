@@ -114,6 +114,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import { api } from "../utils/axios";
 
 const title = ref("");
 const type = ref("");
@@ -125,26 +126,24 @@ const router = useRouter();
 
 const ajouterTache = async () => {
   try {
-    const response = await fetch("http://localhost:4000/api/taches", {
-      method: "POST",
+    const response = await api.post("http://localhost:4000/api/taches", {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        title: title.value,
-        type: type.value,
-        description: description.value,
-        difficulte: difficulte.value,
-        estimation: estimation.value,
-        date: date.value,
-      }),
+
+      title: title.value,
+      type: type.value,
+      description: description.value,
+      difficulte: difficulte.value,
+      estimation: estimation.value,
+      date: date.value,
     });
 
-    if (!response.ok) {
+    if (response.status !== 201) {
       throw new Error("Erreur lors de la création de la tâche.");
     }
 
-    router.push("/");
+    router.push("/ListTache");
   } catch (err) {
     console.error(err);
     alert("Erreur: " + err.message);
